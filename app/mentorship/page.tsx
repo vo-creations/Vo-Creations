@@ -68,12 +68,12 @@ export default function MentorshipPage() {
         </div>
 
         <a
-          href="https://www.skool.com/ugc-vo-creators-4824/about"
+          href="https://calendly.com/vocreations/vo-creations-mentorship-discovery-call"
           target="_blank"
           rel="noopener noreferrer"
           className="hidden sm:inline-flex bg-[#16a34a] text-white font-semibold text-[13px] px-6 py-2.5 rounded-full hover:shadow-[0_0_24px_rgba(22,163,74,0.3)] hover:-translate-y-px transition-all tracking-wide"
         >
-          Join our UGC community
+          Book a call
         </a>
       </nav>
 
@@ -106,12 +106,12 @@ export default function MentorshipPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 animate-fade-up-delay-3">
           <a
-            href="https://www.skool.com/ugc-vo-creators-4824/about"
+            href="https://calendly.com/vocreations/vo-creations-mentorship-discovery-call"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-[#16a34a] text-white font-bold text-base px-9 py-4 rounded-full hover:shadow-[0_0_40px_rgba(22,163,74,0.3)] hover:-translate-y-0.5 transition-all"
           >
-            Join our UGC community &rarr;
+            Book a call &rarr;
           </a>
           <a
             href="#results"
@@ -447,12 +447,12 @@ export default function MentorshipPage() {
           A real skill, a real campaign, and a real network.
         </p>
         <a
-          href="https://www.skool.com/ugc-vo-creators-4824/about"
+          href="https://calendly.com/vocreations/vo-creations-mentorship-discovery-call"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-[#16a34a] text-white font-bold text-base px-9 py-4 rounded-full hover:shadow-[0_0_40px_rgba(22,163,74,0.3)] hover:-translate-y-0.5 transition-all"
         >
-          Join our UGC community &rarr;
+          Book a call &rarr;
         </a>
       </section>
 
