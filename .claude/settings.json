@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --yes sharp-cli --version)",
+      "Bash(sips -g pixelWidth -g pixelHeight \"/Users/dannyholtschke/Projects/vocreations/public/VoCreations Logo.webp\")",
+      "Bash(sips -s format png -z 180 180 \"public/VoCreations Logo.webp\" --out \"app/apple-icon.png\")",
+      "Bash(sips -s format png -z 32 32 \"public/VoCreations Logo.webp\" --out \"app/favicon.png\")",
+      "Bash(sips -s format png -z 192 192 \"public/VoCreations Logo.webp\" --out \"app/icon.png\")",
+      "Bash(sips -s format ico -z 32 32 \"public/VoCreations Logo.webp\" --out \"app/favicon.ico\")",
+      "Bash(node -e \":*)",
+      "Bash(npx --yes sharp-cli -i \"public/VoCreations Logo.webp\" -o \"public/og-logo-temp.png\" -- resize 200)",
+      "Bash(ls /Users/dannyholtschke/Projects/vocreations/public/videos/team-thienvu*)",
+      "Bash(ls /Users/dannyholtschke/Projects/vocreations/public/videos/*.png)",
+      "Bash(ls /Users/dannyholtschke/Projects/vocreations/public/*.png)",
+      "Bash(curl -s -L -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" \"https://x.com/itsthienvuvo/status/2036103378099376588\")",
+      "WebFetch(domain:syndication.twitter.com)",
+      "Bash(curl -s -L \"https://publish.twitter.com/oembed?url=https://x.com/itsthienvuvo/status/2036103378099376588\")",
+      "WebFetch(domain:cdn.syndication.twimg.com)",
+      "WebFetch(domain:x.com)",
+      "Bash(curl -s -L \"https://cdn.syndication.twimg.com/tweet-result?id=2036103378099376588&lang=en&token=0\")",
+      "Bash(curl -s -L -o /Users/dannyholtschke/Projects/vocreations/public/blog/text-vs-talking.jpg \"https://pbs.twimg.com/media/HEGn9ltWAAAQD_h.jpg?name=large\")",
+      "Bash(curl -s -L -A \"Mozilla/5.0\" \"https://nitter.net/itsthienvuvo/status/2036103378099376588\")",
+      "WebFetch(domain:api.fxtwitter.com)",
+      "WebFetch(domain:api.vxtwitter.com)",
+      "Bash(cp /tmp/article-img1.jpg /Users/dannyholtschke/Projects/vocreations/public/blog/analytics-dashboard.jpg)",
+      "Bash(cp /tmp/article-img2.jpg /Users/dannyholtschke/Projects/vocreations/public/blog/top-posts.jpg)",
+      "Bash(curl -s \"https://api.fxtwitter.com/itsthienvuvo/status/2036105952827469983\")",
+      "Bash(curl -s \"https://api.fxtwitter.com/VoCreationsUGC/status/2035015697609191440\")",
+      "Bash(curl -s \"https://api.fxtwitter.com/itsthienvuvo/status/2034305615196008619\")",
+      "Bash(yt-dlp --write-auto-sub --sub-lang en --skip-download --sub-format vtt -o \"/tmp/yt-transcript\" \"https://www.youtube.com/watch?v=qP73cGLQmCU\")",
+      "Bash(python3 -m yt_dlp -x --audio-format mp3 --audio-quality 5 -o \"/tmp/yt-audio.%\\(ext\\)s\" \"https://www.youtube.com/watch?v=qP73cGLQmCU\")",
+      "Bash(python3 -m yt_dlp -x --audio-format mp3 --audio-quality 5 -f \"bestaudio/worst\" --extractor-args \"youtube:player_client=tv\" -o \"/tmp/yt-audio.%\\(ext\\)s\" \"https://www.youtube.com/watch?v=qP73cGLQmCU\")",
+      "Bash(python3 -m yt_dlp -x --audio-format mp3 --audio-quality 5 --cookies-from-browser safari -o \"/tmp/yt-audio.%\\(ext\\)s\" \"https://www.youtube.com/watch?v=qP73cGLQmCU\")",
+      "Bash(python3 -m yt_dlp -x --audio-format mp3 --audio-quality 5 --cookies-from-browser chrome -o \"/tmp/yt-audio.%\\(ext\\)s\" \"https://www.youtube.com/watch?v=qP73cGLQmCU\")",
+      "Bash(python3 -m yt_dlp --cookies-from-browser chrome -f 18 --extractor-args \"youtube:player_client=web_safari,tv\" -o \"/tmp/yt-video.%\\(ext\\)s\" \"https://www.youtube.com/watch?v=qP73cGLQmCU\")",
+      "Bash(npm i:*)",
+      "Bash(node -e \"const s = require\\(''stripe''\\); console.log\\(s.Stripe.PACKAGE_VERSION || ''unknown''\\)\")"
+    ],
+    "additionalDirectories": [
+      "/Users/dannyholtschke/Projects/mohios.com/components/field-notes"
+    ]
+  }
+}
