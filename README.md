@@ -1,10 +1,10 @@
-# Vo Creations — vocreations.com
+# Vo Creations: vocreations.com
 
 UGC agency that trains its own creators through live mentorship. Marketing site built with Next.js (App Router) + Tailwind, deployed on Vercel.
 
 ## Brand
 
-- **Tagline:** _make them remember._ (rendered lowercase, in small caps, with the trailing period — the "dot")
+- **Tagline:** _make them remember._ (rendered lowercase, in small caps, with the trailing period, the "dot")
 - **Voice:** direct, confident, no fluff. No em dashes in site copy.
 - **Themes:** Agency = amber accent (`#F5A623`) on near-black. Mentorship = green accent (`#5cff7e`).
 
@@ -23,7 +23,7 @@ Use the tagline in metadata, the homepage hero kicker, and the footer. Keep it s
 - SEO history is tracked in `SEO-WORK-DIARY.md`.
 - Conference / QR landing pages live at top-level slugs (`/daniel`, `/danny`, `/thienvu`), `noindex`, standalone (no Nav/Footer).
 - **Inline showcase videos** (vertical UGC clips in `bg-bg-card` cards): always use this exact setup so the first frame shows as a thumbnail on iOS Safari:
-  - `src={`${v.src}#t=0.1`}` — the `#t=0.1` media fragment forces Safari to render the frame at 0.1s instead of a black box (no separate poster image needed).
+  - `src={`${v.src}#t=0.1`}`: the `#t=0.1` media fragment forces Safari to render the frame at 0.1s instead of a black box (no separate poster image needed).
   - `playsInline muted loop preload="metadata"`
   - `onMouseEnter` plays, `onMouseLeave` pauses and resets `currentTime = 0.1` (back to the thumbnail frame, not 0), `onClick` toggles mute.
   - Reference implementation: `app/page.tsx` (showcase grid). Mirrored in `app/about/page.tsx`. Keep all raw `<video>` blocks identical to this.

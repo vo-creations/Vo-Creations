@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-/** Query params to strip — tracking/embed params that create duplicate URLs */
+/** Query params to strip: tracking/embed params that create duplicate URLs */
 const STRIP_PARAMS = ["wtime", "trakyo_id"];
 
 /** Prefix for the password-protected creator leaderboard */

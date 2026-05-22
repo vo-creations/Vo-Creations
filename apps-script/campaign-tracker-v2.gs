@@ -1,5 +1,5 @@
 /**
- * campaign-tracker-v2.gs — Creator Leaderboard extension (REFERENCE COPY)
+ * campaign-tracker-v2.gs: Creator Leaderboard extension (REFERENCE COPY)
  * ----------------------------------------------------------------------------
  * This is NOT the live file. The live Apps Script is bound to the Campaign
  * Tracker Google Sheet (project "Daily Campaign Updates Slack-Descript").
