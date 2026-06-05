@@ -36,6 +36,42 @@ npm run build    # production build
 vercel deploy --prod   # deploy to vocreations.com
 ```
 
+## Site map (routes)
+
+All routes live under `app/` (App Router). Metadata is in each route's `layout.tsx` (or `page.tsx` for server pages).
+
+| Route | What it is | Notes |
+| --- | --- | --- |
+| `/` | Homepage | Showcase video grid (see Inline showcase videos convention) |
+| `/about` | About page | Mirrors the homepage showcase video setup |
+| `/creators` | Creator roster / agency page | |
+| `/mentorship` | Mentorship landing | Green accent theme |
+| `/mentorship/enroll` | Enrollment + checkout | Calls `POST /api/checkout` (see Payments) |
+| `/roi` | ROI calculator / pitch page | |
+| `/refund-policy` | Refund policy | |
+| `/pre-call` | Pre-call prep page | |
+| `/blog` | Blog index | |
+| `/blog/text-on-screen-ugc` | Blog post | |
+| `/campaigns/maxxd` | Campaign dashboard (Maxxd) | |
+| `/campaigns/leaderboard` | Creator leaderboard | Password-protected, `noindex` (see below) |
+| `/daniel`, `/danny`, `/thienvu` | Conference / QR landing pages | `noindex`, standalone (no Nav/Footer) |
+
+**API routes:**
+
+| Route | Trigger | Purpose |
+| --- | --- | --- |
+| `POST /api/checkout` | Enroll page | Creates a Stripe Checkout session |
+| `POST /api/stripe-webhook` | Stripe webhook delivery | Posts payment events to Slack + Google Sheet |
+
+## Payments (Stripe → Slack + Google Sheets)
+
+Mentorship payments flow through two Next.js API routes (Vercel serverless functions). The "custom Slack app" is just an Incoming Webhook URL stored as an env var; sheet logging POSTs to a Google Apps Script web app. All secrets live in Vercel, not the repo.
+
+- `app/api/checkout/route.ts` creates the Checkout session (`full` = pay in full, `plan` = 4-payment subscription).
+- `app/api/stripe-webhook/route.js` verifies the signature and handles `checkout.session.completed`, `invoice.paid` (auto-cancels the subscription after 4 payments), and `invoice.payment_failed`, each firing a Slack message + sheet row.
+
+Full reference, including the env var table, the per-event side effects, and known fragile/hardcoded spots: [docs/stripe-slack-integration.md](docs/stripe-slack-integration.md).
+
 ## Creator Leaderboard (`/campaigns/leaderboard`)
 
 Password-protected, `noindex` page ranking creators by month-to-date views across active campaigns. Refreshed daily.
