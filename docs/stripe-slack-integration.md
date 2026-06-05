@@ -2,6 +2,12 @@
 
 How mentorship payments flow from the website into Stripe, Slack, and a Google Sheet.
 
+> **Status: not actively used (soft-disabled).** Mentorship is no longer sold through the website;
+> Thienvu sends payment links directly. The enroll page is `noindex` and removed from the sitemap,
+> so it can't be found via search, but the code and the live Stripe webhook still work if anyone
+> hits `/mentorship/enroll` directly. Before fully deleting, also remove the Stripe Dashboard
+> webhook endpoint and the Vercel env vars listed below.
+
 ## TL;DR
 
 There is **no separate service**. The integration is two Next.js API routes that deploy

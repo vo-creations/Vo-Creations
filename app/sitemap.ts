@@ -6,45 +6,45 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: base,
-      lastModified: new Date("2026-03-24"),
+      lastModified: new Date("2026-04-23"),
       changeFrequency: "weekly",
       priority: 1,
     },
     {
       url: `${base}/about`,
-      lastModified: new Date("2026-03-24"),
+      lastModified: new Date("2026-04-23"),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
       url: `${base}/mentorship`,
-      lastModified: new Date("2026-03-24"),
+      lastModified: new Date("2026-04-23"),
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
       url: `${base}/creators`,
-      lastModified: new Date("2026-03-24"),
+      lastModified: new Date("2026-04-23"),
       changeFrequency: "monthly",
       priority: 0.6,
     },
     {
       url: `${base}/roi`,
-      lastModified: new Date("2026-03-24"),
+      lastModified: new Date("2026-04-23"),
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
-      url: `${base}/mentorship/enroll`,
-      lastModified: new Date("2026-03-26"),
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
       url: `${base}/blog`,
-      lastModified: new Date("2026-03-24"),
+      lastModified: new Date("2026-04-23"),
       changeFrequency: "weekly",
       priority: 0.7,
+    },
+    {
+      url: `${base}/refund-policy`,
+      lastModified: new Date("2026-05-10"),
+      changeFrequency: "yearly",
+      priority: 0.3,
     },
     {
       url: `${base}/blog/text-on-screen-ugc`,

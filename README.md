@@ -46,7 +46,7 @@ All routes live under `app/` (App Router). Metadata is in each route's `layout.t
 | `/about` | About page | Mirrors the homepage showcase video setup |
 | `/creators` | Creator roster / agency page | |
 | `/mentorship` | Mentorship landing | Green accent theme |
-| `/mentorship/enroll` | Enrollment + checkout | Calls `POST /api/checkout` (see Payments) |
+| `/mentorship/enroll` | Enrollment + checkout | **Not actively used.** `noindex`, removed from sitemap; reachable by direct link only (see Payments) |
 | `/roi` | ROI calculator / pitch page | |
 | `/refund-policy` | Refund policy | |
 | `/pre-call` | Pre-call prep page | |
@@ -64,6 +64,11 @@ All routes live under `app/` (App Router). Metadata is in each route's `layout.t
 | `POST /api/stripe-webhook` | Stripe webhook delivery | Posts payment events to Slack + Google Sheet |
 
 ## Payments (Stripe → Slack + Google Sheets)
+
+> **Status: not actively used.** Mentorship is no longer sold through the website; links are sent
+> directly. `/mentorship/enroll` is `noindex` and excluded from the sitemap, but the code and the
+> live Stripe webhook remain functional (reachable by direct link). Do not delete without also
+> removing the Stripe Dashboard webhook endpoint and the Vercel env vars.
 
 Mentorship payments flow through two Next.js API routes (Vercel serverless functions). The "custom Slack app" is just an Incoming Webhook URL stored as an env var; sheet logging POSTs to a Google Apps Script web app. All secrets live in Vercel, not the repo.
 
