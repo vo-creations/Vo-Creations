@@ -38,13 +38,13 @@
 ### No Action Needed
 
 - `go.vocreations.com/6396a168` — old landing page subdomain, DNS record already removed. Google will drop it on its own.
-- "Discovered - currently not indexed" pages (`/about`, `/blog/text-on-screen-ugc`, `/creators`, `/mentorship`, `/mentorship/enroll`) — real pages in sitemap, just awaiting Google crawl.
+- "Discovered - currently not indexed" pages (`/about`, `/blog/text-on-screen-ugc`, `/creators`, `/mentorship`) — real pages in sitemap, just awaiting Google crawl. (`/mentorship/enroll` was removed from the sitemap and set to `noindex` in 2026-06 since mentorship is no longer sold via the site.)
 
 ### Next Steps
 
 - [x] Deploy changes to Vercel
 - [x] Click "Validate Fix" in GSC for: 404s, Duplicate canonical, Alternate canonical, Page with redirect
-- [ ] Use GSC URL Inspection → "Request Indexing" for each of the 5 discovered-but-not-indexed pages
+- [ ] Use GSC URL Inspection → "Request Indexing" for each of the 4 discovered-but-not-indexed pages (excluding `/mentorship/enroll`, now intentionally `noindex`)
 - [ ] Re-check GSC in 1-2 weeks to confirm issues are resolving
 
 ---
