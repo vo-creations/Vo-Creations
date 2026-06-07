@@ -48,35 +48,34 @@ this entry + that file are the two things to update.
 How the leaderboard derives its numbers. Verified against the live API + fixtures
 (program `WDeIefXYKcb5SIeMLhst`), not assumed. Refines `topic: sideshift-api`.
 
-- **Join key LOCKED:** `topCreators[].id` == `handles[].userId` (live-tested 10/10).
-  Metrics (`totalViews/totalPosts`) come from `topCreators[]` keyed by `id`; identity
-  (name/platform/handle/image) from `handles[]` keyed by `userId`. The board **ignores
-  `creators.approved`** entirely — that field tracks approved contracts
-  (== `summary.activeContracts`), not the metric/identity grain. Only ~5/10 top
-  creators are "approved"; the rest are repurposed accounts (below), which is expected.
+- **Population — rank only creators who POSTED (vendor-confirmed, Daniel 2026-06):**
+  the ranked set is exactly `topCreators[]` (== `summary.uniqueCreators`). NO filtering
+  by `creators.approved` (that tracks approved contracts, == `summary.activeContracts`,
+  not the metric grain) and NO roster-membership filter. Identity joins from `handles[]`
+  by `userId`; metrics from `topCreators[]` by `id` (join key LOCKED, live-tested 10/10).
 - **Full metric set:** the knob is `topCreatorsLimit` (not `limit`/`topN`, which are
   ignored). `=1000` returns all `summary.uniqueCreators`. The adapter throws if it gets
   fewer than `uniqueCreators`, so silent truncation can't slip through.
-- **All-time freeze (the key decision):** accounts get **repurposed** across campaigns
-  — old content deleted, the warm account (followers) kept — so a per-(creator,
-  campaign) *lifetime* total can DECREASE after a campaign ends. This contaminates
-  **all-time** boards only; **7d/30d are clean** (active campaigns; accounts aren't
-  repurposed that soon). Fix, no schema change: we only sync `status=active` programs,
-  so snapshots stop at campaign end → the last `snapshots` row per (program, creator)
-  is the clean campaign-final value, captured before erosion. **All-time is built from
-  our own snapshots** — `MAX(lifetime_views)` per (program, creator), summed across a
-  creator's programs by stable `external_id` — NOT the live `/analytics/overview`
-  all-time (contaminated). The `sync_runs` "views decreased" warning is the erosion signal.
+- **All-time = LIVE lifetime totals (vendor will fix repurposing, Daniel 2026-06):**
+  accounts get **repurposed** across campaigns — old content deleted, warm account kept —
+  so a per-(creator, campaign) *lifetime* total can DECREASE after a campaign ends,
+  contaminating **all-time** boards (7d/30d are clean — active campaigns, no repurposing
+  that soon). The vendor confirmed they will fix the carried-over stats on their end
+  (timeline unknown). **Decision: do NOT build the all-time-freeze workaround.** All-time
+  uses the **latest** `lifetime_views` per (creator, program), summed across a creator's
+  programs by stable `external_id` (full history, live values). **TODO (remove when
+  vendor ships the fix):** if contamination proves material before then, build a freeze
+  fallback (`MAX(lifetime_views)` per program+creator) — our `snapshots` are immutable,
+  so the historical data for it is already preserved with zero loss.
 - **Orphan creators → UPSERT (decided):** a `topCreators` metric can reference a creator
-  absent from the current `/creators` roster (the repurposed ones). The pipeline
-  upserts the creator from the metric's `id`+`name` (already implemented in
-  `lib/ingest/sync.ts`) rather than skipping, so all-time credit is preserved across
-  campaigns. Trade-off: the board is metric-scoped, not strictly roster-scoped — correct
-  here because all-time deliberately spans past campaigns.
+  absent from the current `/creators` roster (a repurposed one). The pipeline upserts the
+  creator from the metric's `id`+`name` (already in `lib/ingest/sync.ts`) rather than
+  skipping, so the posted-content population above is fully ranked. The `sync_runs`
+  "views decreased" warning remains the erosion signal.
 
-**Why:** these four are the difference between a correct board and a plausible-but-wrong
-one. The all-time-from-snapshots rule in particular must live in `lib/queries/leaderboard.ts`
-and nowhere else.
+**Why:** these are the difference between a correct board and a plausible-but-wrong one.
+All of it lives ONLY in `lib/queries/leaderboard.ts`. _Supersedes the earlier
+all-time-freeze plan, dropped after the vendor confirmed an upstream fix._
 
 ## topic: payments — _2026-06_
 

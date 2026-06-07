@@ -6,11 +6,11 @@
 //       Clean: during an active campaign accounts aren't repurposed, so lifetime
 //       totals only grow. A creator who joined mid-window baselines off their first
 //       snapshot (honest partial), never off 0 (which would count pre-existing views).
-//   • all-time          = MAX(lifetime_views) per (program, creator), summed across a
-//       creator's programs. Built from OUR snapshots, never the live API: after a
-//       campaign ends an account can be repurposed and its lifetime total erode, but
-//       we stop snapshotting at campaign end (only status=active syncs), so the last
-//       snapshot per (program, creator) is the clean campaign-final value.
+//   • all-time          = the LATEST lifetime_views per (program, creator), summed
+//       across a creator's programs (full history, live values). Repurposed accounts
+//       can erode a past campaign's lifetime total, but per the vendor (Daniel 2026-06)
+//       that is being fixed upstream, so we do NOT build a freeze workaround. See the
+//       TODO in allTimeBoard() for the fallback if the fix never lands.
 //   • warm-up           = if a window needs N days of history the board doesn't have
 //       yet, return warmingUp:true with NO entries — never a fake zero.
 //
@@ -124,18 +124,26 @@ async function deltaBoard(programId: string | null, days: number): Promise<RawRo
   return rows as unknown as RawRow[];
 }
 
-/** all-time: MAX(lifetime) per (program,creator), summed per creator across programs. */
+/** all-time: the LATEST lifetime total per (program,creator), summed per creator
+ *  across programs. Uses live lifetime values (full history) per the vendor decision
+ *  (docs/DECISIONS topic: leaderboard-windows).
+ *
+ *  TODO(vendor-repurposing-fix): if a repurposed account erodes a past campaign's
+ *  lifetime total before the vendor ships their fix, and that proves material, swap
+ *  the `distinct on ... order by snapshot_date desc` (latest) below for
+ *  `max(lifetime_views) group by program_id, creator_id` (campaign-final freeze).
+ *  Our snapshots are immutable, so the data for that is already retained. */
 async function allTimeBoard(programId: string | null): Promise<RawRow[]> {
   const rows = await db.execute<RawRow>(sql`
-    with max_pc as (
-      select s.program_id, s.creator_id,
-             max(s.lifetime_views) v, max(s.lifetime_posts) p
+    with latest_pc as (
+      select distinct on (s.program_id, s.creator_id)
+             s.program_id, s.creator_id, s.lifetime_views v, s.lifetime_posts p
       from snapshots s where ${progFilter(programId)}
-      group by s.program_id, s.creator_id
+      order by s.program_id, s.creator_id, s.snapshot_date desc
     )
     select m.creator_id, c.external_id, c.name,
            sum(m.v)::bigint as views, sum(m.p)::int as posts
-    from max_pc m join creators c on c.id = m.creator_id
+    from latest_pc m join creators c on c.id = m.creator_id
     group by m.creator_id, c.external_id, c.name
     order by views desc, posts desc, c.name asc
   `);
