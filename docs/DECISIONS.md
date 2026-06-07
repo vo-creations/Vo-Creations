@@ -89,6 +89,31 @@ All of it lives ONLY in `lib/queries/leaderboard.ts`, proven by a committed, re-
 test (`scripts/test-leaderboard.ts`, CI job `leaderboard-test`). _Supersedes the earlier
 all-time-freeze plan, dropped after the vendor confirmed an upstream fix._
 
+## topic: leaderboard-access — _2026-06_
+
+The leaderboard (`/leaderboard`, → `leaderboard.vocreations.com`) launched with
+**per-creator magic-link auth (Supabase Auth)**, not a shared password.
+
+- **Auth:** Supabase Auth, **magic links only** for launch (Google OAuth deferred —
+  needs a Google Cloud client; follow-up). `lib/supabase/*` handles sessions; session
+  refresh runs in `middleware.ts` for `/leaderboard` + `/auth` only.
+- **Identity → data:** `session.email → creators.email → creator_id` (case-insensitive,
+  `lib/queries/creator-access.ts`). All board data still comes from Drizzle keyed off
+  the resolved creator — **no Supabase RLS** (Supabase is auth-only; our `creators`
+  table is the authz source).
+- **Access model:** a recognized creator sees the **overall** board + only the
+  campaigns they're on (`program_creators`); the switcher lists only their campaigns;
+  an unknown/unauthorized campaign param silently falls back to overall.
+- **Unknown email → directed screen (not a dead end):** "We don't recognize this email
+  yet — DM Danny on Slack with the email you want to use." No data shown.
+- **Seeding:** `scripts/seed-creator-emails.mjs` loads `creators.email` from a CSV
+  (matches by Sideshift `external_id` / handle / name; dry-run by default).
+- `noindex` (layout `robots`), standalone (no marketing nav).
+
+**Why:** logging in as themselves is both the gate and the personalization (the "YOU"
+row). Supersedes the interim shared-password / overall-board-only plan. **Supersedes
+the old `Phase 5` "creator auth" step — pulled forward into launch.**
+
 ## topic: payments — _2026-06_
 
 Removed the website checkout (`app/mentorship/enroll/` page and `app/api/checkout/`
