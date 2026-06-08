@@ -114,6 +114,31 @@ The leaderboard (`/leaderboard`, → `leaderboard.vocreations.com`) launched wit
   input trimmed). The seed maps `email_primary → email`, `email_alt → alt_email`.
 - **Open-redirect guard:** `/auth/callback` accepts only same-origin LOCAL `next` paths
   (must start with `/`, not `//` or `/\`); anything else falls back to `/leaderboard`.
+- **Verification caveats (carry forward):**
+  (a) The cross-campaign tamper defense (`page.tsx` resolves `c` only against the
+  creator's own `getCreatorPrograms`) was verified by **code-path equivalence** — prod
+  currently has a single active program, so there's no second campaign to tamper toward.
+  **Re-verify with real data when a second campaign goes live.**
+  (b) F1's **success-path** redirect branch (valid code → `${origin}${next}`) is exercised
+  only after a real magic-link round-trip, which needs the SMTP cutover. **Pending the
+  cutover round-trip test.**
+- **YOU highlight** renders on both the list (ranks 4+) and the podium (top-3 card carries
+  a YOU badge + teal treatment) — the motivational hook must be visible at launch.
+- **Host rewrite for the subdomain:** `leaderboard.vocreations.com` rewrites any
+  non-`/leaderboard`, non-`/auth` path to `/leaderboard` (in `middleware.ts`) — without
+  it the subdomain root serves the marketing homepage. Uses the same
+  `request.nextUrl.hostname` pattern as the www-redirect, so (like that redirect) it is
+  **only testable in production** — `next dev` ignores a spoofed Host header. Validate at
+  the DNS cutover (assign the domain in Vercel, then load the bare subdomain).
+- **Staff access = Google OAuth + allow-list (decided):** agency staff sign in with Google
+  (Supabase Google provider) and get the FULL dashboard — overall + ALL campaign boards,
+  switcher unscoped, "staff view" badge, no YOU (staff aren't ranked). Allow-list is
+  `STAFF_EMAILS` (comma-separated) OR `STAFF_EMAIL_DOMAINS` (default `vocreations.com`; set
+  to `""` to disable domain matching), checked in `isStaffEmail()` before creator resolution.
+  (Note: `@mohios.com` is NOT staff-by-domain — add such addresses to `STAFF_EMAILS`.)
+  Non-staff unknown emails still get
+  the directed screen. The magic-link + OAuth flows share `/auth/callback` (PKCE). **This
+  same Google client is the planned auth for the Phase 4 CRM.**
 - **Unknown email → directed screen (not a dead end):** "We don't recognize this email
   yet — DM Danny on Slack with the email you want to use." No data shown.
 - **Seeding:** `scripts/seed-creator-emails.mjs` loads `creators.email` from a CSV
