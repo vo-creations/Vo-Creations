@@ -133,8 +133,10 @@ The leaderboard (`/leaderboard`, → `leaderboard.vocreations.com`) launched wit
 - **Staff access = Google OAuth + allow-list (decided):** agency staff sign in with Google
   (Supabase Google provider) and get the FULL dashboard — overall + ALL campaign boards,
   switcher unscoped, "staff view" badge, no YOU (staff aren't ranked). Allow-list is
-  `STAFF_EMAILS` (comma-separated) OR `STAFF_EMAIL_DOMAINS` (default `mohios.com,vocreations.com`),
-  checked in `isStaffEmail()` before creator resolution. Non-staff unknown emails still get
+  `STAFF_EMAILS` (comma-separated) OR `STAFF_EMAIL_DOMAINS` (default `vocreations.com`; set
+  to `""` to disable domain matching), checked in `isStaffEmail()` before creator resolution.
+  (Note: `@mohios.com` is NOT staff-by-domain — add such addresses to `STAFF_EMAILS`.)
+  Non-staff unknown emails still get
   the directed screen. The magic-link + OAuth flows share `/auth/callback` (PKCE). **This
   same Google client is the planned auth for the Phase 4 CRM.**
 - **Unknown email → directed screen (not a dead end):** "We don't recognize this email

@@ -48,7 +48,7 @@ export function isStaffEmail(email: string): boolean {
   const list = (v: string | undefined, fallback = "") =>
     (v ?? fallback).split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
   if (list(process.env.STAFF_EMAILS).includes(e)) return true;
-  return list(process.env.STAFF_EMAIL_DOMAINS, "mohios.com,vocreations.com").includes(e.slice(at + 1));
+  return list(process.env.STAFF_EMAIL_DOMAINS, "vocreations.com").includes(e.slice(at + 1));
 }
 
 /** The campaigns this creator is on (program_creators). Powers the switcher and
