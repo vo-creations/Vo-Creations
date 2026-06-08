@@ -22,6 +22,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 301);
   }
 
+  // 1b. leaderboard.vocreations.com serves ONLY the /leaderboard area. Without this
+  //     host rewrite the subdomain root would render the marketing homepage. Anything
+  //     that isn't already a /leaderboard or /auth path is rewritten to the board root
+  //     (query string preserved); those two prefixes fall through to session refresh.
+  //     See docs/DECISIONS.md (topic: leaderboard-access).
+  if (
+    hostname === "leaderboard.vocreations.com" &&
+    !pathname.startsWith("/leaderboard") &&
+    !pathname.startsWith("/auth")
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/leaderboard";
+    return NextResponse.rewrite(url);
+  }
+
   // 2. Strip tracking query params that cause duplicate indexing
   let stripped = false;
   const cleanParams = new URLSearchParams();

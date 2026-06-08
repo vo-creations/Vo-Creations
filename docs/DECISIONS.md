@@ -124,6 +124,12 @@ The leaderboard (`/leaderboard`, → `leaderboard.vocreations.com`) launched wit
   cutover round-trip test.**
 - **YOU highlight** renders on both the list (ranks 4+) and the podium (top-3 card carries
   a YOU badge + teal treatment) — the motivational hook must be visible at launch.
+- **Host rewrite for the subdomain:** `leaderboard.vocreations.com` rewrites any
+  non-`/leaderboard`, non-`/auth` path to `/leaderboard` (in `middleware.ts`) — without
+  it the subdomain root serves the marketing homepage. Uses the same
+  `request.nextUrl.hostname` pattern as the www-redirect, so (like that redirect) it is
+  **only testable in production** — `next dev` ignores a spoofed Host header. Validate at
+  the DNS cutover (assign the domain in Vercel, then load the bare subdomain).
 - **Staff access = Google OAuth + allow-list (decided):** agency staff sign in with Google
   (Supabase Google provider) and get the FULL dashboard — overall + ALL campaign boards,
   switcher unscoped, "staff view" badge, no YOU (staff aren't ranked). Allow-list is
