@@ -49,13 +49,23 @@ the leaderboard is the first tenant). Read the code, not a copy here. _Why:
   across campaigns via a stable Sideshift `userId` (`creators.external_id`).
 - **Ingest seam:** vendor-agnostic `IngestAdapter` ([`lib/ingest/types.ts`](../lib/ingest/types.ts));
   [`lib/ingest/sideshift.ts`](../lib/ingest/sideshift.ts) is the only module touching the vendor.
+  **Multi-brand:** each Sideshift key sees one company, so `SIDESHIFT_KEYS` (JSON map or flat
+  list) holds every brand key and the adapter iterates all of them (archived programs included).
+  _Why: DECISIONS `topic: sideshift-multikey`._
 - **Pipeline:** [`lib/ingest/sync.ts`](../lib/ingest/sync.ts) — immutable `raw_ingest`,
-  upserts (agency CRM fields preserved), idempotent snapshots, `sync_runs` log, Slack
-  warn on failure or a lifetime-views decrease. One program failing doesn't fail the batch.
+  upserts (agency CRM fields preserved), idempotent snapshots (`source='live'`), `sync_runs`
+  log, Slack warn on failure or a lifetime-views decrease. One program failing doesn't fail the batch.
 - **Metrics (one definition):** [`lib/queries/leaderboard.ts`](../lib/queries/leaderboard.ts)
   — per-campaign + overall boards × {7d, 30d, all-time}. 7d/30d are snapshot deltas;
   all-time is `MAX(lifetime_views)` per (program, creator) from our snapshots (see
-  DECISIONS `topic: leaderboard-windows`). Returns a `warmingUp` state, never a fake zero.
+  DECISIONS `topic: leaderboard-windows`). The 7/30d `deltaBoard` applies the window-confidence
+  guard (excludes `source='anchor'` rows; low-capture pairs use `source='live'` only — DECISIONS
+  `topic: alltime-repull`). Returns a `warmingUp` state, never a fake zero.
+- **All-time repull:** [`scripts/repull-alltime.ts`](../scripts/repull-alltime.ts)
+  (`npm run repull:alltime`, dry-run by default) rebuilds authoritative all-time from the API's
+  lifetime `topCreators` totals across all brand keys, re-keys/anchors the CSV-backfilled rows,
+  and marks low-capture windows warming-up. Matcher: [`lib/ingest/match.ts`](../lib/ingest/match.ts)
+  (`npm run test:match`). _Why: DECISIONS `topic: alltime-repull`._
 - **Cron:** `app/api/cron/sync` daily 09:00 UTC (`vercel.json`), Bearer `CRON_SECRET`.
 - **Probe:** `scripts/probe-sideshift.mjs` (Phase 0 discovery; fixtures gitignored, PII).
 - **Leaderboard (`app/leaderboard/`):** gated creator board (→ `leaderboard.vocreations.com`).

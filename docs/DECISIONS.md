@@ -31,6 +31,79 @@ still return all rows. No `service_role` key is referenced anywhere in the codeb
 use only `NEXT_PUBLIC_SUPABASE_ANON_KEY`). If a product ever needs the Supabase data API,
 add real policies then — do not just disable RLS.
 
+## topic: sideshift-multikey — _2026-06_
+
+Each Sideshift API key is scoped to **one company** and sees only that company's
+programs — verified: the "Vo Creations" key returns exactly 2 programs (`#Allinmotion`
+active + `Makon AI` archived) and **cannot** see other brands (BlackBox, Codédex, Fable…)
+or their creators. A single key is why the live board had ~25 creators.
+
+- **`SIDESHIFT_KEYS`** is the list of EVERY brand key. Two accepted formats (parsed in
+  `configKeys()`, `lib/ingest/sideshift.ts`): a **JSON map** `{"BlackBox":"sk_live_…",…}`
+  (preferred — the Apps Script format; keeps the brand label for the per-key coverage report)
+  OR a flat comma/space/newline list. `SIDESHIFT_API_KEY` (single) stays as a fallback.
+- The adapter iterates all keys and remembers which key each program came from, so the daily
+  cron now covers all brands, not one. `fetchAllPrograms()` also returns per-key **coverage**
+  (programs / creators / views) so a dead or wrong key shows up as a 0-row line.
+- **Archived programs are reachable:** ended programs report `status=archived` (NOT `ended`);
+  `GET /programs?status=ended` returns 0. `listActivePrograms()` filters `status=active`; the
+  repull lists with **no status filter** (all statuses) and normalizes archived → `ended`.
+  Before this, the adapter's `status=active`-only listing silently skipped archived programs.
+
+**Why:** the agency runs many brands, each its own Sideshift company/key; covering only one
+under-collected the platform. Supersedes the single-`SIDESHIFT_API_KEY` assumption in
+`topic: sideshift-api` (that entry's endpoint contract is otherwise unchanged).
+
+## topic: alltime-repull — _2026-06_
+
+All-time totals undercounted Sideshift by 6–96% per creator (Kiera 13.4M vs ~28.6M; Casey
+Arena effectively missing) because all-time was rebuilt by **summing date-windowed per-video
+CSVs**, which omit older videos/campaigns. The fix repulls the SOURCE of truth — the API's
+per-program lifetime `topCreators[]` — across every brand key and every program (active +
+archived), grouped by the stable creator uid. Tool: `scripts/repull-alltime.ts`
+(`npm run repull:alltime`, dry-run by default; reuses `topic: sideshift-multikey`).
+
+- **Identity re-key.** The CSV backfill created creator/program rows under SYNTHETIC ids
+  (`backfill:kiera-par`); the API keys on the real Sideshift uid. The repull **re-keys** each
+  backfill row to its real uid via, in order: (a) a DB row already on the uid; (b) the master
+  roster CSV `external_id` → canonical name (seed-convergent — the seed matches `external_id`
+  first, so a re-keyed row is the SAME row the email seed attaches to); (c) handle; (d) a
+  tolerant name match (`lib/ingest/match.ts`: Last,First / casing / whitespace / accents, ghost
+  rows excluded). **Ghost / ambiguous / unmatched / merge-conflict are HELD for manual review —
+  never force-matched, never auto-duplicated.** Programs get the same re-key (backfill program →
+  real id by brand name).
+- **All-time anchor + window-confidence guard (#5).** All-time ALWAYS anchors to the API total.
+  The 7/30-day WINDOW is gated by **capture% = backfill latest / API all-time** per (program,
+  creator):
+  - **≥ 70% → ADDITIVE SHIFT** (`+ (API − current)` on every non-live snapshot): latest equals
+    the API total AND the real recent deltas are preserved. Additive, NOT proportional —
+    proportional would inflate deltas by the all-time miss ratio.
+  - **< 70% → WARMING-UP**: write the all-time anchor (`snapshots.source='anchor'`, excluded from
+    windows) and set `program_creators.window_confident=false`. `deltaBoard` then sources that
+    pair's window from `source='live'` rows ONLY — so it reads warming-up until the cron
+    accumulates real dailies (self-resolving, no backfill→anchor jump). Kiera (~47%) lands here.
+  - `latest==0` → **irreconcilable** (reported, not forced).
+  The repull reports per-creator capture%, method, and the warming-up list.
+- **The guard (shipped here), schema + query + cron:** additive nullable columns
+  `snapshots.source` (live | backfill | anchor) and `program_creators.window_confident`
+  (migration `0003`); `deltaBoard`'s `elig` CTE excludes `anchor` rows and applies
+  `window_confident IS NOT FALSE OR source='live'`; `allTimeBoard` includes everything; the cron
+  tags new rows `source='live'`. **No-op on current data** (no anchor rows / no false flags →
+  identical results; proven by `scripts/test-leaderboard.ts` staying green). **Deviation from
+  the brief's "cron sets window_confident=true on first daily":** the cron does NOT flip the flag
+  — the `elig` predicate already counts live rows for low-capture pairs, so windows build purely
+  from real dailies with zero one-day jump; flipping would re-admit the unreliable backfill.
+- **Gated rollout.** Default dry-run (re-key plan, held list, per-creator OLD-vs-API-NEW table,
+  per-key coverage, program reconciliation, capture/method report). `--apply` = identity
+  unification only; `--apply --anchor` = additionally anchor + additive-shift + mark low-capture.
+  Both transactional, logged to `sync_runs` (source `repull-alltime`). **Requires the real
+  `SIDESHIFT_KEYS` + the master roster CSV**; with only the single key it resolves Allinmotion
+  (all 25 already real-keyed, 100% capture) and leaves the rest absent.
+
+**Why:** fixing the SOURCE (API lifetime totals) corrects all-time AND the missing creators in
+one pass; the per-video CSV stays only as re-anchored recent-window shape, and the confidence
+guard keeps a poorly-captured backfill from showing fake-precise windows.
+
 ## topic: sideshift-api — _2026-06_
 
 Phase 0 probe (`scripts/probe-sideshift.mjs`) confirmed the real Sideshift API

@@ -62,6 +62,11 @@ export const programCreators = pgTable("program_creators", {
   creatorId: uuid("creator_id").notNull().references(() => creators.id),
   role: text("role"),                          // e.g. lead, contributor
   status: text("status").notNull().default("active"),
+  // null/true = trust this pair's backfill for 7/30d windows; false = low-capture (the CSV
+  // backfill caught < ~70% of the API all-time) → deltaBoard sources the window from LIVE
+  // snapshots only, so it reads "warming up" until the cron fills in. See DECISIONS
+  // topic: alltime-repull. (Additive, nullable — no-op on existing rows.)
+  windowConfident: boolean("window_confident"),
   joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   pk: primaryKey({ columns: [t.programId, t.creatorId] }),
@@ -119,6 +124,10 @@ export const snapshots = pgTable("snapshots", {
   creatorId: uuid("creator_id").notNull().references(() => creators.id),
   lifetimeViews: bigint("lifetime_views", { mode: "number" }).notNull(),
   lifetimePosts: integer("lifetime_posts").notNull().default(0),
+  // Provenance: 'live' (daily cron) | 'backfill' (CSV) | 'anchor' (all-time repull) | null
+  // (legacy). 'anchor' rows are ALL-TIME only — deltaBoard excludes them from windows so a
+  // re-anchor can't create a bogus jump. See DECISIONS topic: alltime-repull. (Nullable.)
+  source: text("source"),
   capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   pk: primaryKey({ columns: [t.snapshotDate, t.programId, t.creatorId] }),

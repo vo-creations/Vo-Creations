@@ -183,6 +183,10 @@ async function syncProgram(
       });
     }
 
+    // source='live': a real daily capture. The window-confidence guard (DECISIONS
+    // topic: alltime-repull) counts live rows even for low-capture pairs, so the cron
+    // accumulating real dailies is what lets a warming-up creator's window become real —
+    // no window_confident flip needed (flipping would re-admit unreliable backfill rows).
     await db
       .insert(snapshots)
       .values({
@@ -191,10 +195,11 @@ async function syncProgram(
         creatorId,
         lifetimeViews: m.lifetimeViews,
         lifetimePosts: m.lifetimePosts,
+        source: "live",
       })
       .onConflictDoUpdate({
         target: [snapshots.snapshotDate, snapshots.programId, snapshots.creatorId],
-        set: { lifetimeViews: m.lifetimeViews, lifetimePosts: m.lifetimePosts, capturedAt: new Date() },
+        set: { lifetimeViews: m.lifetimeViews, lifetimePosts: m.lifetimePosts, source: "live", capturedAt: new Date() },
       });
     written++;
   }
