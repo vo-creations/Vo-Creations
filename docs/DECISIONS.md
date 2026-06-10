@@ -10,6 +10,79 @@ edit the old entry. For present-tense "how it works now," see
 
 ---
 
+## topic: campaign-accountability — _2026-06_
+
+Built a daily **campaign accountability digest**: per active campaign, per creator, are
+they posting vs a target (default **4 posts/creator/day**, `DAILY_POST_TARGET`). Posts to
+Slack **#campaigns**. Engine: [`lib/queries/accountability.ts`](../lib/queries/accountability.ts)
+(the one metric definition) → [`lib/digest/campaign-digest.ts`](../lib/digest/campaign-digest.ts)
+(render + orchestrate) → `scripts/campaign-digest.ts` (`npm run digest:campaign`, dry-run
+default) + `app/api/cron/campaign-digest` (strict, daily). New env
+`SLACK_CAMPAIGNS_WEBHOOK_URL`; `notifySlack(text, url?)` now takes a channel webhook.
+
+- **The only honest metric is posts/creator/day = latest − previous `lifetime_posts`.**
+  Sideshift is lifetime-only with **no per-platform split per creator** (`topCreators[]` is
+  `{id,name,totalViews,totalPosts}`; `platformBreakdown` is program-level only). So "1x/day
+  on 4 platforms" is NOT reconstructable — it collapses to a flat per-creator posts target.
+  **This is the known limitation, by data design, not a TODO.**
+- **Gaps are normalized.** A failed sync skips a day, so the delta spans `latest − previous`
+  snapshot dates and the target scales (`target x gapDays`). A creator with a single snapshot
+  is `no_data`, never a fabricated zero.
+- **Active-campaign source = `programs WHERE status='active'`** (driven by the daily sync),
+  NOT the Campaign Tracker sheet. Only a program with a *fresh daily snapshot* can be held
+  accountable; the sheet is human intent that drifts (verified 2026-06-10: the sheet lists
+  Aonic/eComrads/CoWorker/Morphic active, but those exist in our DB only as `status=ended`
+  backfill frozen at 2026-06-07 — `status='active'` correctly excludes them). The 27 backfill
+  brands are all `ended`, so a frozen historical snapshot can never masquerade as today's.
+- **Stop conditions (brief).** The cron runs `strict`: if the latest `sideshift` sync run is
+  not status=ok AND dated today, it posts `SYNC STALE : <last good date>` and renders NO
+  numbers. Ended campaigns drop out by status. Every printed number traces to a snapshots row.
+- **KNOWN BLOCKER (shared with `topic: alltime-repull`): only `#Allinmotion (CPM Creators)`
+  syncs live** — prod has the single `SIDESHIFT_API_KEY` (Vo Creations company), not the
+  multi-brand `SIDESHIFT_KEYS`. Allinmotion is the agency's internal CPM pool, not a client
+  campaign, and has posted 0 net content since 2026-06-07. The engine is campaign-agnostic and
+  auto-covers Aonic/eComrads/CoWorker the moment their brand keys are added. **Verified Phase
+  0/2:** DB latest snapshot posts == live Sideshift API, 25/25 exact; digest deltas trace to
+  the raw snapshots rows.
+- **CLIENT-ONLY FILTER — built (2026-06-10).** #campaigns is client campaigns only, so the
+  internal pool is excluded at the source: `EXCLUDED_COMPANY_NAMES = { "Vo Creations" }` in
+  [`lib/queries/accountability.ts`](../lib/queries/accountability.ts) drops any program whose
+  `company_name` is in the set from `buildAccountabilityReport` — it cannot drive `asOf` or
+  render a section (programs with a null company_name are kept). That is the **single reversal
+  point**: empty the set to let the internal pool back in. Consequence today: with Allinmotion
+  (company "Vo Creations") the only live program, the report is correctly **empty** until the
+  client brand keys land. Verified by dry-run (below).
+- **Metric APPROVED (Danny, 2026-06-10); NOT activated.** The posts/creator/day metric and the
+  behind vs no-data distinction are signed off, and the engine is merged to `main` ready to run.
+  But the digest does NOT post and the cron does NOT fire until the checklist below. Two
+  independent off-switches keep it dark: (a) `/api/cron/campaign-digest` is absent from
+  `vercel.json` `crons` (never scheduled), and (b) `SLACK_CAMPAIGNS_WEBHOOK_URL` is unset, so
+  `notifySlack` returns false (no post). **Do NOT activate against `#Allinmotion` alone** — it is
+  the internal Vo Creations pool, not the client accountability target.
+
+**Activation checklist — flip the digest live to #campaigns (do ALL, in order):**
+1. **Add the client brand keys.** Put the Aonic, eComrads, and CoWorker Sideshift API keys into
+   `SIDESHIFT_KEYS` (Vercel **and** `.env.local`). Until this, the only `status='active'` program
+   is the internal `#Allinmotion` pool, so there is nothing real to post — do not activate first.
+2. **Verify ingest.** After the next 09:00 UTC sync, confirm `programs WHERE status='active'`
+   includes the client campaigns with a snapshot dated today, then run `npm run digest:campaign`
+   (dry-run) and check they render with real deltas.
+3. **Internal-pool exclusion — already built, nothing to do.** The client-only filter
+   (`EXCLUDED_COMPANY_NAMES`, see above) keeps Allinmotion / company "Vo Creations" out of the
+   digest permanently. To include it again, empty that set in `lib/queries/accountability.ts`.
+4. **Set the channel webhook.** Create a Slack Incoming Webhook bound to #campaigns; set
+   `SLACK_CAMPAIGNS_WEBHOOK_URL` in Vercel (and `.env.local` for local posting).
+5. **Register the cron.** Add to `vercel.json` `crons`:
+   `{ "path": "/api/cron/campaign-digest", "schedule": "30 9 * * *" }` (after the 09:00 sync; uses
+   the existing `CRON_SECRET` Bearer). Deploy by merging to `main`.
+- **Deactivate / rollback:** remove the `vercel.json` cron entry, or unset
+  `SLACK_CAMPAIGNS_WEBHOOK_URL` (posts become no-ops). No code change needed either way.
+
+**Why:** an audit-tone "who is behind today" digest mirrors the sales-CRM daily intelligence,
+pointed at creator posting. Proving it against live data before scheduling was the explicit
+gate — the data turned out to expose that only one (internal) campaign is wired, which is the
+real finding to act on (supply brand keys) rather than ship a digest over frozen data.
+
 ## topic: security — _2026-06_
 
 Enabled **Row Level Security on every public table** (migration

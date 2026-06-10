@@ -36,3 +36,5 @@ jobs:
         run: npm run db:migrate
       - name: Run leaderboard window-math tests
         run: npm run test:leaderboard:ci
+      - name: Run campaign-accountability tests
+        run: npm run test:accountability:ci

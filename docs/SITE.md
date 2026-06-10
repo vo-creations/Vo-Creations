@@ -57,6 +57,14 @@ the leaderboard is the first tenant). Read the code, not a copy here. _Why:
   all-time is `MAX(lifetime_views)` per (program, creator) from our snapshots (see
   DECISIONS `topic: leaderboard-windows`). Returns a `warmingUp` state, never a fake zero.
 - **Cron:** `app/api/cron/sync` daily 09:00 UTC (`vercel.json`), Bearer `CRON_SECRET`.
+- **Campaign accountability digest:** [`lib/queries/accountability.ts`](../lib/queries/accountability.ts)
+  computes posts/creator/day (latest − previous `lifetime_posts`) per `status='active'` program
+  vs a target (`DAILY_POST_TARGET`); [`lib/digest/campaign-digest.ts`](../lib/digest/campaign-digest.ts)
+  renders + posts to **#campaigns** (`SLACK_CAMPAIGNS_WEBHOOK_URL`). Manual:
+  `npm run digest:campaign` (dry-run default). Cron: `app/api/cron/campaign-digest`
+  (`strict` → SYNC STALE gate). **Currently DRY-RUN ONLY** — not in `vercel.json` `crons` and
+  `SLACK_CAMPAIGNS_WEBHOOK_URL` unset, so it never posts. _Activation checklist + known limits
+  (no per-platform grain; only Allinmotion syncs live): DECISIONS `topic: campaign-accountability`._
 - **Probe:** `scripts/probe-sideshift.mjs` (Phase 0 discovery; fixtures gitignored, PII).
 - **Leaderboard (`app/leaderboard/`):** gated creator board (→ `leaderboard.vocreations.com`).
   Supabase **magic-link** auth (`lib/supabase/*`, session refresh in `middleware.ts`);
