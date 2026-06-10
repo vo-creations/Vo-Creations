@@ -13,7 +13,10 @@
     "db:studio": "drizzle-kit studio",
     "sideshift:probe": "node --env-file=.env.local scripts/probe-sideshift.mjs",
     "test:leaderboard": "node --env-file=.env.local --import tsx --test scripts/test-leaderboard.ts",
-    "test:leaderboard:ci": "node --import tsx --test --test-force-exit scripts/test-leaderboard.ts"
+    "test:leaderboard:ci": "node --import tsx --test --test-force-exit scripts/test-leaderboard.ts",
+    "digest:campaign": "node --env-file=.env.local --import tsx scripts/campaign-digest.ts",
+    "test:accountability": "node --env-file=.env.local --import tsx --test scripts/test-accountability.ts",
+    "test:accountability:ci": "node --import tsx --test --test-force-exit scripts/test-accountability.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
