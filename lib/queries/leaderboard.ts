@@ -166,16 +166,32 @@ async function deltaBoard(programId: string | null, days: number): Promise<RawRo
  *  `max(lifetime_views) group by program_id, creator_id` (campaign-final freeze).
  *  Our snapshots are immutable, so the data for that is already retained. */
 async function allTimeBoard(programId: string | null): Promise<RawRow[]> {
+  // BRAND_KEY DEDUP (docs/DECISIONS topic: alltime-repull): the all-time repull is per-BRAND
+  // (anchors the brand total onto the backfill program), but the live cron writes per-TIER
+  // sideshift programs. Both carry the same `programs.brand_key`. To avoid summing a brand's
+  // backfill/anchor row AND its live tiers for the same creator, a backfill row is dropped for a
+  // (brand_key, creator) once a LIVE (sideshift) program of that brand has a row for them — so
+  // live data supersedes the anchor, one source per (brand_key, creator). No-op until brand_key
+  // is set (all NULL today → every row kept → identical to before).
   const rows = await db.execute<RawRow>(sql`
     with latest_pc as (
       select distinct on (s.program_id, s.creator_id)
-             s.program_id, s.creator_id, s.lifetime_views v, s.lifetime_posts p
-      from snapshots s where ${progFilter(programId)}
+             s.program_id, s.creator_id, s.lifetime_views v, s.lifetime_posts p,
+             pr.brand_key, pr.source as prog_source
+      from snapshots s join programs pr on pr.id = s.program_id
+      where ${progFilter(programId)}
       order by s.program_id, s.creator_id, s.snapshot_date desc
+    ),
+    brand_live as (
+      select distinct brand_key, creator_id from latest_pc
+      where brand_key is not null and prog_source = 'sideshift'
     )
     select m.creator_id, c.external_id, c.name,
            sum(m.v)::bigint as views, sum(m.p)::int as posts
     from latest_pc m join creators c on c.id = m.creator_id
+    where m.brand_key is null                 -- ungrouped programs unaffected
+       or m.prog_source = 'sideshift'         -- live tier rows always kept
+       or not exists (select 1 from brand_live b where b.brand_key = m.brand_key and b.creator_id = m.creator_id)
     group by m.creator_id, c.external_id, c.name
     order by views desc, posts desc, c.name asc
   `);

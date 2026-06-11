@@ -245,11 +245,15 @@ export interface KeyCoverage {
  * Used by scripts/repull-alltime.ts to rebuild authoritative all-time totals from
  * the API (topCreators lifetime), which date-windowed CSV sums undercounted.
  */
+/** A program's normalized data tagged with the brand (the source key's label) it came
+ *  from — the grain the CSV backfill used. `brandLabel` is null for flat-list keys. */
+export type BrandTaggedProgramData = NormalizedProgramData & { brandLabel: string | null };
+
 export async function fetchAllPrograms(
   opts?: { statuses?: ("active" | "ended")[] }
-): Promise<{ data: NormalizedProgramData[]; coverage: KeyCoverage[] }> {
+): Promise<{ data: BrandTaggedProgramData[]; coverage: KeyCoverage[] }> {
   const want = opts?.statuses;
-  const data: NormalizedProgramData[] = [];
+  const data: BrandTaggedProgramData[] = [];
   const coverage: KeyCoverage[] = [];
   for (const { key, label } of configKeys()) {
     // No status filter → ALL statuses (active + archived/ended).
@@ -259,7 +263,7 @@ export async function fetchAllPrograms(
       const program = mapProgram(p);
       if (want && !want.includes(program.status ?? "active")) continue;
       const d = await fetchProgramDataWithKey(program, key);
-      data.push(d);
+      data.push({ ...d, brandLabel: label }); // tag with the brand key → backfill is per-brand
       progs++; creators += d.metrics.length; views += d.metrics.reduce((s, m) => s + m.lifetimeViews, 0);
     }
     coverage.push({ label, programs: progs, creators, views });

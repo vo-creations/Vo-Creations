@@ -44,6 +44,11 @@ export const programs = pgTable("programs", {
   name: text("name").notNull(),
   companyId: text("company_id"),
   companyName: text("company_name"),           // the brand
+  // Brand grouping that links a brand's per-BRAND backfill program to its per-TIER live
+  // programs (the source key label, e.g. "aonic"). allTimeBoard dedups a brand's backfill/
+  // anchor row against the live tiers by this key — one source per (brand_key, creator). Set
+  // by the all-time repull; nullable (no-op on un-keyed programs). See DECISIONS alltime-repull.
+  brandKey: text("brand_key"),
   status: text("status").notNull().default("active"), // active | ended
   startsAt: timestamp("starts_at", { withTimezone: true }),
   endsAt: timestamp("ends_at", { withTimezone: true }),
@@ -136,7 +141,28 @@ export const snapshots = pgTable("snapshots", {
 }));
 
 // ---------------------------------------------------------------------------
-// 7. Sync runs — observability. One row per pipeline execution.
+// 7. Creator aliases — secondary REAL Sideshift uid → the canonical creator row.
+//    When ONE human ends up with two real uids (a repurposed handle reused across
+//    campaigns by the same person), we merge the secondary into the canonical AND record
+//    the alias here. `upsertCreator` (lib/ingest/sync.ts) consults this FIRST, so a future
+//    sync that still sees the secondary uid in topCreators routes to the canonical row
+//    instead of re-creating a duplicate — the merge stays permanent. See DECISIONS
+//    topic: alltime-repull. (Synthetic backfill→real merges need no alias: the cron never
+//    emits a `backfill:` id.)
+// ---------------------------------------------------------------------------
+export const creatorAliases = pgTable("creator_aliases", {
+  source: text("source").notNull().default("sideshift"),
+  aliasExternalId: text("alias_external_id").notNull(),  // a secondary real uid that routes away
+  canonicalCreatorId: uuid("canonical_creator_id").notNull().references(() => creators.id),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.source, t.aliasExternalId] }),
+  byCanonical: index("ix_aliases_canonical").on(t.canonicalCreatorId),
+}));
+
+// ---------------------------------------------------------------------------
+// 8. Sync runs — observability. One row per pipeline execution.
 // ---------------------------------------------------------------------------
 export const syncRuns = pgTable("sync_runs", {
   id: uuid("id").defaultRandom().primaryKey(),
