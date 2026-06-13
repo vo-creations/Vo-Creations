@@ -91,12 +91,28 @@ const maxSpan = (envs: { span: number }[]): number =>
  *   - Baseline is the snapshot AT/BEFORE `latest - N` (not interpolated to exactly N
  *     days ago). With daily snapshots this is at most ~1 day of bias; accepted, no change.
  *   - Deltas are floored at 0 (`greatest(..., 0)`): a window decrease never shows on the
- *     board. The erosion signal lives in `sync_runs.warnings` (views_decreased), not here. */
+ *     board. The erosion signal lives in `sync_runs.warnings` (views_decreased), not here.
+ *  WINDOW-CONFIDENCE GUARD (docs/DECISIONS topic: alltime-repull): the `elig` CTE below
+ *  excludes `source='anchor'` rows (all-time-only — keeps a re-anchor from faking a window
+ *  jump) and, for low-capture pairs (`program_creators.window_confident = false`), counts
+ *  ONLY `source='live'` snapshots — so a backfill that caught < ~70% of the truth reads as
+ *  warming-up until the cron fills in, instead of showing a 100×-scaled fake delta. On data
+ *  with no anchor rows / no false flags (i.e. today) this is a no-op. */
 async function deltaBoard(programId: string | null, days: number): Promise<RawRow[]> {
+  const progFilterS = programId ? sql`s.program_id = ${programId}` : sql`true`;
   const rows = await db.execute<RawRow>(sql`
-    with ref as (
+    with elig as (
+      select s.*
+      from snapshots s
+      left join program_creators pc
+        on pc.program_id = s.program_id and pc.creator_id = s.creator_id
+      where ${progFilterS}
+        and s.source is distinct from 'anchor'
+        and (pc.window_confident is not false or s.source = 'live')
+    ),
+    ref as (
       select program_id, max(snapshot_date) as latest, min(snapshot_date) as earliest
-      from snapshots where ${progFilter(programId)}
+      from elig
       group by program_id
     ),
     -- only programs with at least N days of history contribute to an N-day window
@@ -107,20 +123,20 @@ async function deltaBoard(programId: string | null, days: number): Promise<RawRo
     latest_pc as (
       select distinct on (s.program_id, s.creator_id)
         s.program_id, s.creator_id, s.lifetime_views v, s.lifetime_posts p
-      from snapshots s join qualifying q on q.program_id = s.program_id
+      from elig s join qualifying q on q.program_id = s.program_id
       order by s.program_id, s.creator_id, s.snapshot_date desc
     ),
     baseline_pc as (
       select distinct on (s.program_id, s.creator_id)
         s.program_id, s.creator_id, s.lifetime_views v, s.lifetime_posts p
-      from snapshots s join qualifying q
+      from elig s join qualifying q
         on q.program_id = s.program_id and s.snapshot_date <= q.cutoff
       order by s.program_id, s.creator_id, s.snapshot_date desc
     ),
     earliest_pc as (  -- fallback baseline for a creator who first appeared after the cutoff
       select distinct on (s.program_id, s.creator_id)
         s.program_id, s.creator_id, s.lifetime_views v, s.lifetime_posts p
-      from snapshots s join qualifying q on q.program_id = s.program_id
+      from elig s join qualifying q on q.program_id = s.program_id
       order by s.program_id, s.creator_id, s.snapshot_date asc
     ),
     delta_pc as (
@@ -150,16 +166,32 @@ async function deltaBoard(programId: string | null, days: number): Promise<RawRo
  *  `max(lifetime_views) group by program_id, creator_id` (campaign-final freeze).
  *  Our snapshots are immutable, so the data for that is already retained. */
 async function allTimeBoard(programId: string | null): Promise<RawRow[]> {
+  // BRAND_KEY DEDUP (docs/DECISIONS topic: alltime-repull): the all-time repull is per-BRAND
+  // (anchors the brand total onto the backfill program), but the live cron writes per-TIER
+  // sideshift programs. Both carry the same `programs.brand_key`. To avoid summing a brand's
+  // backfill/anchor row AND its live tiers for the same creator, a backfill row is dropped for a
+  // (brand_key, creator) once a LIVE (sideshift) program of that brand has a row for them — so
+  // live data supersedes the anchor, one source per (brand_key, creator). No-op until brand_key
+  // is set (all NULL today → every row kept → identical to before).
   const rows = await db.execute<RawRow>(sql`
     with latest_pc as (
       select distinct on (s.program_id, s.creator_id)
-             s.program_id, s.creator_id, s.lifetime_views v, s.lifetime_posts p
-      from snapshots s where ${progFilter(programId)}
+             s.program_id, s.creator_id, s.lifetime_views v, s.lifetime_posts p,
+             pr.brand_key, pr.source as prog_source
+      from snapshots s join programs pr on pr.id = s.program_id
+      where ${progFilter(programId)}
       order by s.program_id, s.creator_id, s.snapshot_date desc
+    ),
+    brand_live as (
+      select distinct brand_key, creator_id from latest_pc
+      where brand_key is not null and prog_source = 'sideshift'
     )
     select m.creator_id, c.external_id, c.name,
            sum(m.v)::bigint as views, sum(m.p)::int as posts
     from latest_pc m join creators c on c.id = m.creator_id
+    where m.brand_key is null                 -- ungrouped programs unaffected
+       or m.prog_source = 'sideshift'         -- live tier rows always kept
+       or not exists (select 1 from brand_live b where b.brand_key = m.brand_key and b.creator_id = m.creator_id)
     group by m.creator_id, c.external_id, c.name
     order by views desc, posts desc, c.name asc
   `);

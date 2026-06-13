@@ -14,7 +14,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
-  programs, creators, programCreators, campaignAccounts, snapshots, rawIngest, syncRuns,
+  programs, creators, programCreators, campaignAccounts, snapshots, rawIngest, syncRuns, creatorAliases,
 } from "@/lib/db/schema";
 import { notifySlack } from "@/lib/notify/slack";
 import type { IngestAdapter, NormalizedProgram, RawPayload } from "./types";
@@ -183,6 +183,10 @@ async function syncProgram(
       });
     }
 
+    // source='live': a real daily capture. The window-confidence guard (DECISIONS
+    // topic: alltime-repull) counts live rows even for low-capture pairs, so the cron
+    // accumulating real dailies is what lets a warming-up creator's window become real —
+    // no window_confident flip needed (flipping would re-admit unreliable backfill rows).
     await db
       .insert(snapshots)
       .values({
@@ -191,10 +195,11 @@ async function syncProgram(
         creatorId,
         lifetimeViews: m.lifetimeViews,
         lifetimePosts: m.lifetimePosts,
+        source: "live",
       })
       .onConflictDoUpdate({
         target: [snapshots.snapshotDate, snapshots.programId, snapshots.creatorId],
-        set: { lifetimeViews: m.lifetimeViews, lifetimePosts: m.lifetimePosts, capturedAt: new Date() },
+        set: { lifetimeViews: m.lifetimeViews, lifetimePosts: m.lifetimePosts, source: "live", capturedAt: new Date() },
       });
     written++;
   }
@@ -202,7 +207,11 @@ async function syncProgram(
 }
 
 /** Upsert a creator by stable (source, external_id). Preserves agency-edited CRM
- *  fields (bio, notes, portfolioUrl, status) — only refreshes source-derived ones. */
+ *  fields (bio, notes, portfolioUrl, status) — only refreshes source-derived ones.
+ *  ALIAS FIRST: if (source, external_id) is a recorded creator_alias (a secondary real uid
+ *  that a confirmed multi-uid merge routed to a canonical row), return the canonical creator_id
+ *  and create NOTHING — so a repurposed-handle human's merge stays permanent across syncs.
+ *  See DECISIONS topic: alltime-repull. */
 async function upsertCreator(
   source: string,
   externalId: string,
@@ -210,6 +219,12 @@ async function upsertCreator(
   email: string | null | undefined,
   profileImageUrl: string | null | undefined
 ): Promise<string> {
+  const [alias] = await db
+    .select({ canonicalCreatorId: creatorAliases.canonicalCreatorId })
+    .from(creatorAliases)
+    .where(and(eq(creatorAliases.source, source), eq(creatorAliases.aliasExternalId, externalId)));
+  if (alias) return alias.canonicalCreatorId;
+
   const [row] = await db
     .insert(creators)
     .values({ source, externalId, name, email: email ?? null })
