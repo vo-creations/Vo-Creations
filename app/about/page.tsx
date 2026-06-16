@@ -16,13 +16,6 @@ const team = [
     image: "/videos/team-thienvu.jpg",
   },
   {
-    name: "Danny Holtschke",
-    role: "COO / CRO",
-    bio: "AI Ops, sales, growth, and operations. Scales the agency.",
-    initials: "DH",
-    image: "/videos/team-danny.png",
-  },
-  {
     name: "Daniel Yun",
     role: "CCO (Chief Creative Officer)",
     bio: "Self-taught. 100M+ views. 6-figure earner. Creative force behind Vo Creations.",
@@ -413,6 +406,17 @@ export default function AboutPage() {
           </Link>
         </div>
       </section>
+
+      {/* Non-visible attribution backlink */}
+      <a
+        href="https://mohios.com"
+        rel="noopener"
+        className="sr-only"
+        aria-hidden="true"
+        tabIndex={-1}
+      >
+        Built by Mohios.com
+      </a>
 
       <Footer />
     </>
