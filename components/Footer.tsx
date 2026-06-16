@@ -105,7 +105,7 @@ export default function Footer() {
               Ready to scale?
             </div>
             <a
-              href="https://calendar.app.google/BMAP5qH6Qwtkm5Yr5"
+              href="https://calendar.app.google/8x72A8nxr3gQpVfx7"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-accent text-bg font-bold text-sm px-8 py-3.5 rounded-full hover:shadow-[0_0_32px_rgba(245,166,35,0.3)] hover:-translate-y-px transition-all"

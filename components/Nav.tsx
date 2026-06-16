@@ -48,7 +48,7 @@ export default function Nav() {
 
         <div className="flex items-center gap-2">
           <a
-            href="https://calendar.app.google/BMAP5qH6Qwtkm5Yr5"
+            href="https://calendar.app.google/8x72A8nxr3gQpVfx7"
             target="_blank"
             rel="noopener noreferrer"
             className="bg-accent text-bg font-bold text-[13px] px-5 md:px-6 py-2.5 rounded-full hover:shadow-[0_0_24px_rgba(245,166,35,0.3)] hover:-translate-y-px transition-all"

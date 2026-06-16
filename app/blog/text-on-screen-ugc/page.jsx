@@ -298,7 +298,7 @@ export default function TextOnScreenUGC() {
         headline="Ready to run real UGC?"
         body="We don't hire creators. We build them through live mentorship. We only take on campaigns we're confident we can perform on."
         buttonText="Book a Call"
-        buttonHref="https://calendar.app.google/WcipmdbdzGBPHGqz9"
+        buttonHref="https://calendar.app.google/8x72A8nxr3gQpVfx7"
       />
     </div>
   );
