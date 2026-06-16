@@ -483,6 +483,29 @@ the mentorship Stripe alerts. Signature is HMAC-SHA256 over `"<ts>.<body>"`
 feature, so the handler logs the full payload and falls back to a raw message on
 an unexpected shape, to be refined from the first real event.
 
+## topic: deploy — _2026-06-17_ (org migration broke auto-deploy)
+
+On **2026-06-12** the GitHub repo was transferred from the `mohios-nz` user to the
+**`vo-creations`** org (`vo-creations/Vo-Creations`, repo id `1211008171`; the old
+`mohios-nz/Vo-Creations` path now 301-redirects there). The transfer **broke
+Vercel's git auto-deploy**: a repo moving orgs drops the Vercel GitHub App's
+authorization, so pushes to `main` stopped triggering builds. PRs #28, #29, #30 all
+merged to `main` but never shipped — the last git-triggered prod build was #26
+(`3e9d54d`, 2026-06-12).
+
+**Bridge:** #30 (about-page edit) was shipped on 2026-06-17 with a one-off
+`vercel --prod` from clean `main` (deploy `dpl_G7V7Resv…`). This is the documented
+exception, valid ONLY because git auto-deploy is down — see the caveat below.
+
+**Still open (Danny-gated, dashboard-only):** the Vercel **project** still lives in
+the `mohios` team (`vercel.com/mohios/vocreations`); the `vo-creations` Vercel
+account is empty. To finish the migration and restore merge-to-deploy, either
+**transfer** the project (mohios team → vo-creations account; keeps domain + env
+vars + history) or **re-import** `vo-creations/Vo-Creations` into the vo-creations
+account and re-add env vars + move the `vocreations.com` domain. Either way,
+reconnect the Vercel GitHub App to the `vo-creations` org. Until then, every deploy
+needs a manual `vercel --prod`.
+
 ## topic: deploy — _2026-06_
 
 Deploy by **merging to `main`**; Vercel's git integration builds and ships to
