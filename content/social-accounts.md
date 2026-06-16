@@ -31,5 +31,5 @@
 - https://www.instagram.com/codingwithvincent/
 
 ## Links
-- **Calendar (Blog CTA):** https://calendar.app.google/WcipmdbdzGBPHGqz9
-- **Calendar (Main site):** https://calendar.app.google/BMAP5qH6Qwtkm5Yr5
+- **Calendar (Blog CTA):** https://calendar.app.google/8x72A8nxr3gQpVfx7
+- **Calendar (Main site):** https://calendar.app.google/8x72A8nxr3gQpVfx7
